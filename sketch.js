@@ -1,64 +1,80 @@
-let years = {
-  'redLine' : new Year('red', 'Red Line'),
-  'purpleLine' : new Year('purple', 'Purple Line'),
-  'blueLine' : new Year('blue', 'Blue Line'),
-  'yellowLine' : new Year('yellow', 'Yellow Line')
-};  
+// let years = {
+//   'redLine' : new Year('#ff2200', 'Red Line'),
+//   'purpleLine' : new Year('#9966ff', 'Purple Line'),
+//   'blueLine' : new Year('#999933', 'Blue Line'),
+//   'yellowLine' : new Year('#ffaa00', 'Yellow Line')
+// };  
 
+let yearColors = ['#ff2200', '#9966ff', '#999933', '#ffaa00']
+
+let years;
 let labelBoxes = [];
 
 let selectedYear = null;
 
-function setup() {
-  createCanvas(600, 400);
+async function setup() {
+  createCanvas(1200, 400);
+  background(0);
+  loadJSON('http://localhost:3000/weather/year?type=rain', dataIsLoaded);
+}
+
+function dataIsLoaded(data) {
+  years = data;
+  let i = 0;
+  for (const year of Object.keys(years.years)) {
+    years.years[year].color = yearColors[i];
+    i++;
+  }
 }
 
 function draw() {
-  console.log(selectedYear);
   background(0);
+  if (!years) {
+    push()
+      translate(width / 2, height / 2);
+      rotate(frameCount * 0.1);
+      noFill();
+      stroke(255);
+      strokeWeight(4);
+      arc(0, 0, 40, 40, 0, PI * 1.5);
+    pop()
+  }
 
-  let startY = 10;
-
-  //lines
-  for (let year of Object.values(years)) { 
-    if (selectedYear && year != selectedYear) {
-      continue;
-    }
-    strokeWeight(3);
-    stroke(year.color);
-    noFill();
-    beginShape();
-      for (let i = 0; i < year.values.length; i++) {
-        let x = map(i, 0, year.values.length - 1, 0, width);
-        let y = map (year.values[i], 0, year.highestValue, height, 0);
-        vertex(x, y);
+  if (years) {
+    for (const [yearLabel, yearData] of Object.entries(years.years)) {
+      if (selectedYear && yearLabel != selectedYear) {
+        console.log('continuing');
+        continue;
       }
-    endShape();
-  }
 
-  //labels
-  labelBoxes = [];
-  for (let year of Object.values(years)) {
-    stroke(year.color);
-    textAlign(LEFT, TOP);
-    strokeWeight(1);
+      strokeWeight(3);
+      stroke(yearData.color);
+      noFill();
+      beginShape();
+        i = 0;
+        for (const [date, value] of Object.entries(yearData.data)) {
+          let x = map(i, 0, Object.keys(yearData.data).length - 1, 0, width);
+          let y = map(value, -0.01, yearData.biggest.value, height, 0);
+          
+          //first control point
+          if (i == 0) {
+            splineVertex(x, y);
+          }
 
-    let w = textWidth(year.label);
-    let h = textAscent(year.label) + textDescent(year.label);
+          splineVertex(x, y);
 
-    labelBoxes.push({
-      year: year,
-      x: 10,
-      y: startY,
-      w: w,
-      h: h
-    });
+          //last control point
+          if (i == Object.keys(yearData.data).length) {
+            splineVertex(x, y);
+          }
 
-    text(year.label, 10, startY);
-    startY += 20;
-  }
+          i++;
+        }
+      endShape();
+    }
+    noLoop();
+  } 
 
-  noLoop();
 }
 
 function mousePressed() {

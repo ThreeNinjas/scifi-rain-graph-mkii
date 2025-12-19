@@ -1,7 +1,8 @@
 class Year {
     constructor(color, label) {
         let out = {
-            values: Array.from({length: 6}, () => Math.floor(Math.random() * 101)),
+            values: Array.from({length: 365
+            }, () => Math.floor(Math.random() * 101)),
             color: color,
             label: label
         };
