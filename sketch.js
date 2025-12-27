@@ -2,6 +2,7 @@ let years;
 let font;
 let daily;
 
+
 let serverUrl = 'http://localhost:3000/weather/';
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -11,9 +12,12 @@ let yearColors = ['#ff2200', '#f5f6fa', '#45936b', '#9966ff']
 let labelBoxes = [];
 let selectedYear = null;
 
+let supplementalDataBoxes = [];
+let selectedSupplementalData = [];
+
 let util = new Util();
 
-//TODO past 24 hours
+//TODO solo past 24 hours
 //TODO range bars
 //TODO comfort dot
 
@@ -29,7 +33,7 @@ async function setup() {
     years = y;
     daily = d;
 
-    let i = 0;
+  let i = 0;
   for (const year of Object.keys(years.years)) {
     years.years[year].color = yearColors[i];
     i++;
@@ -38,15 +42,6 @@ async function setup() {
 
   
     
-}
-
-function dataIsLoaded(data) {
-  years = data;
-  let i = 0;
-  for (const year of Object.keys(years.years)) {
-    years.years[year].color = yearColors[i];
-    i++;
-  }
 }
 
 function draw() {
@@ -208,7 +203,7 @@ function draw() {
 
     //24hours
     if (!selectedYear) {
-      util.drawGreenBox(type, daily);
+      drawGreenBox(type, daily, selectedSupplementalData);
     }
 
     noLoop();
@@ -243,4 +238,132 @@ function mousePressed() {
       return;
     }
   }
+
+  for (let box of supplementalDataBoxes) {
+     if (
+      mouseX >= box.x &&
+      mouseX <= box.x + box.w &&
+      mouseY >= box.y &&
+      mouseY <= box.y + box.h
+    ) {
+      if (!selectedSupplementalData.includes(box.dataType)) {
+        selectedSupplementalData.push(box.dataType);
+      } else {
+        selectedSupplementalData = selectedSupplementalData.filter(v => v !== box.dataType);
+      }
+      redraw();
+      return;
+    }
+  }
 }
+
+function drawGreenBox(type, daily, selected) {
+        let boxConfig = {};
+        let colors = null;
+
+        switch (type) {
+            case 'rain':
+                boxConfig = {
+                    x: 200,
+                    y: 10,
+                    w: 300,
+                    h: 100,
+                };
+                colors = {
+                    'temp' : '#ff5555',
+                    'pres' : '#7ce839ff',
+                    'hum'  : '#5a7dfcff',
+                    'clouds' : '#f5f6fa',
+                    'rain' : '#666688',
+                    'vis' : '#21dffcff'
+                };
+                break;  
+            case 'temp':
+                boxConfig = {
+                    x: 700,
+                    y: 250,
+                    w: 250,
+                    h: 125,
+                };
+                break;
+        }
+
+        fill('black'); 
+        stroke('red')
+        rect(boxConfig.x, boxConfig.y, boxConfig.w, boxConfig.h);
+        
+        if (type == 'rain') {
+            if (daily.error) {
+                push();
+                    textSize(32);
+                    fill('red');
+                    noStroke();
+                    textAlign(LEFT, TOP);
+                    text('ERROR', boxConfig.x + 20, boxConfig.y + 20);
+                pop();
+                return;
+            }
+
+            let labelX = boxConfig.x + boxConfig.w + 10;
+            let startingLabelY = boxConfig.y;
+
+            for (const [dataType, data] of Object.entries(daily.data)) { 
+                if (selected.length > 0 && !selected.includes(dataType)) {
+                    continue;
+                }
+                    console.log('doing it');
+                    push();
+                    strokeWeight(1.75);
+                    stroke(colors[dataType]);
+                    noFill();
+                    beginShape();
+                        for (i = 0; i < data.length; i++) {
+                            if (daily.ranges[dataType].min > 0 || daily.ranges[dataType].max > 0) {
+                                let x = map(i, 0, data.length, boxConfig.x, boxConfig.x + boxConfig.w + 12);
+                                let y = map(data[i], daily.ranges[dataType].min, daily.ranges[dataType].max, boxConfig.h + boxConfig.y, boxConfig.y);
+                                vertex(x, y);
+
+                                if (i !== 0 && i !== data.length - 1 && i % 2 === 0) {
+                                textSize(5);
+                                //stroke('#578feb')
+                                text('|', x-1, boxConfig.h+3)
+                            }
+                            }
+                            
+                            
+                        }
+                    endShape();
+                pop();
+            }
+
+            for (const [dataType, data] of Object.entries(daily.data)) {
+                push();
+                    //labels
+                    textAlign(LEFT, TOP);
+                    fill(colors[dataType]);
+                    
+                    noStroke();
+                    
+
+                    if (selected.includes(dataType)) {
+                        textSize(14);
+                        circle(labelX + textWidth(dataType) + 7, startingLabelY + 10, 8);
+                    } else {
+                        textSize(12);
+                    }
+                    text(dataType, labelX, startingLabelY);
+                    supplementalDataBoxes.push({
+                    dataType: dataType,
+                    x: labelX,
+                    y: startingLabelY,
+                    w: textWidth(dataType),
+                    h: textAscent(dataType) + textDescent(dataType)
+                  });
+                    startingLabelY += 18;
+                pop();
+
+
+                
+            }
+        }
+   }
