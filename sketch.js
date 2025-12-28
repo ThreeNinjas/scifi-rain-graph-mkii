@@ -10,10 +10,10 @@ let type = urlParams.get('type');
 let yearColors = ['#ff2200', '#f5f6fa', '#45936b', '#9966ff']
 
 let labelBoxes = [];
-let selectedYear = [];
+let selectedYear = JSON.parse(localStorage.getItem('selectedYear')) || [];
 
 let supplementalDataBoxes = [];
-let selectedSupplementalData = [];
+let selectedSupplementalData = JSON.parse(localStorage.getItem('selectedSupplementalData')) || [];
 
 let biggestBoys = [];
 let runnersUp = [];
@@ -22,9 +22,11 @@ let util = new Util();
 
 //TODO range bars
 //TODO comfort dot
+//24hr temp range can be historic low - historic high for that day
 
 async function setup() {
   createCanvas(1200, 400);
+  
   font = await loadFont('/assets/Antonio-Regular.ttf');
   background(0);
   
@@ -48,7 +50,9 @@ async function setup() {
 
 function draw() {
   background(0);
-
+stroke('red');
+noFill();
+  rect(1, 1, width-1, height-1);
   if (!years) {
     drawLoadingIcon();
   }
@@ -107,13 +111,7 @@ function mousePressed() {
         selectedYear = selectedYear.filter(v => v !== box.year);
       }
 
-
-      // if (box.year == selectedYear) {
-      //   selectedYear = null;
-      // } else {
-      //   selectedYear = box.year;
-      // }
-      
+      localStorage.setItem('selectedYear', JSON.stringify(selectedYear));
       redraw();
       return;
     }
@@ -131,6 +129,7 @@ function mousePressed() {
       } else {
         selectedSupplementalData = selectedSupplementalData.filter(v => v !== box.dataType);
       }
+      localStorage.setItem('selectedSupplementalData', JSON.stringify(selectedSupplementalData));
       redraw();
       return;
     }
@@ -199,8 +198,8 @@ function drawGreenBox(type, daily, selected) {
                 beginShape();
                     for (i = 0; i < data.length; i++) {
                         if (daily.ranges[dataType].min > 0 || daily.ranges[dataType].max > 0) {
-                            let x = map(i, 0, data.length, boxConfig.x, boxConfig.x + boxConfig.w + 12);
-                            let y = map(data[i], daily.ranges[dataType].min, daily.ranges[dataType].max, boxConfig.h + boxConfig.y, boxConfig.y);
+                            let x = map(i, 0, data.length, boxConfig.x+1, boxConfig.x + boxConfig.w + 11);
+                            let y = map(data[i], daily.ranges[dataType].min, daily.ranges[dataType].max, boxConfig.h + boxConfig.y-2, boxConfig.y+2);
                             vertex(x, y);
 
                             if (i !== 0 && i !== data.length - 1 && i % 2 === 0) {
@@ -263,8 +262,8 @@ function drawDaily() {
       beginShape();
         i = 0;
         for (const [date, value] of Object.entries(yearData.data)) {
-          let x = map(i, 0, Object.keys(yearData.data).length - 1, 0, width);
-          let y = map(value, years.globalRange.min, years.globalRange.max, height - 0.5, 10);
+          let x = map(i, 0, Object.keys(yearData.data).length - 1, 1, width-2);
+          let y = map(value, years.globalRange.min, years.globalRange.max, height - 2, 2);
           
           if (date === yearData.biggest.date) {
             biggestBoys.push({
