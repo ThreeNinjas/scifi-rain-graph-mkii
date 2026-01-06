@@ -7,7 +7,7 @@ let celestial;
 let serverUrl = "http://localhost:3000/weather/";
 const urlParams = new URLSearchParams(window.location.search);
 
-let type = urlParams.get("type");
+let type = urlParams.get("type") || 'rain';
 let yearColors = ["#ff2200", "#f5f6fa", "#45936b", "#9966ff"];
 
 let labelBoxes = [];
@@ -25,7 +25,8 @@ let util = new Util();
 //TODO comfort dot
 //24hr temp range can be historic low - historic high for that day - you can't get that from open-meteo, but you can get it from this api: https://dev.meteostat.net/api/point/daily.html#example
 //TODO audo detect location? No, allow the user to enter a zip or address
-//TODO show progress of sun and mooon in their procession across the sky
+//TODO implement moonphase
+//TODO show progress of planets in the sky....see the bottom for my notes on this
 
 async function setup() {
   createCanvas(1200, 400);
@@ -35,7 +36,7 @@ async function setup() {
 
   fetch(serverUrl + "year?type=" + type)
     .then(r => r.json())
-    .then(y => {
+    .then(y => { 
       years = y;
       let i = 0;
       for (const year of Object.keys(years.years)) {
@@ -57,7 +58,7 @@ async function setup() {
     })
 }
 
-function draw() {
+function draw() { 
   background(0);
   stroke("red");
   noFill();
@@ -88,9 +89,15 @@ function draw() {
     }
   }
 
-  if (celestial) {
+  if (type == 'rain' && celestial && selectedYear.length == 0) {
     drawCelestial()
   }
+
+  push();
+    noStroke();
+    fill(type == 'temp' ? 'red' : 'blue');
+    rect((width -40), 10, 20, 20);
+  pop();
 }
 
 function drawLoadingIcon() {
@@ -120,6 +127,7 @@ function yearString(yearLabel, yearData) {
 }
 
 function mousePressed() {
+    //top left text
   for (let box of labelBoxes) {
     if (
       mouseX >= box.x &&
@@ -138,7 +146,8 @@ function mousePressed() {
       return;
     }
   }
-
+  
+  //greenBox
   for (let box of supplementalDataBoxes) {
     if (
       mouseX >= box.x &&
@@ -160,6 +169,17 @@ function mousePressed() {
       redraw();
       return;
     }
+  }
+
+  //toggle switch
+  if (
+    mouseX >= width - 40 &&
+    mouseX <= (width - 40) + 20 &&
+    mouseY >= 10 &&
+    mouseY <= 10 + 20
+  ) {
+    type = type == 'rain' ? 'temp' : 'rain';
+    window.location.href = window.location.pathname + `?type=${type}`;
   }
 }
 
@@ -194,7 +214,7 @@ function drawGreenBox(type, daily, selected) {
       break;
   }
 
-  fill(0, 0, 0, 100);
+  fill(0, 0, 0, 150);
   stroke("red");
   rect(boxConfig.x, boxConfig.y, boxConfig.w, boxConfig.h);
 
@@ -279,7 +299,7 @@ function drawGreenBox(type, daily, selected) {
     }
   }
 
-  if (type == 'temp') {
+  if (type == 'temp' && years) {
     let startX = boxConfig.x + 5;
     let startY = boxConfig.y + 15;
 
@@ -362,6 +382,11 @@ function drawDaily() {
 }
 
 function topLeftText() {
+  push();
+    fill(0, 0, 0, 150);
+    noStroke();
+    rect(10, 10, 175, 80);
+  pop();
   push();
   let startY = 10;
   labelBoxes = [];
@@ -508,16 +533,25 @@ function timeStamp() {
 }
 
 function drawCelestial() {
-  push();
   let x = 600;
-  let startingCelestialY = 40;
+  let startingCelestialY = 19;
 
-  //sun
-  drawCelestialLine('sun', x, startingCelestialY);
-  
-  //moon
-  startingCelestialY += 40;
-  drawCelestialLine('moon', x, startingCelestialY);
+  push();
+    noStroke();
+    fill(0, 0, 0, 100);
+    rect(x+3, 16 - 5, 302, 118);
+  pop();
+  push();
+    for (let [body, data] of Object.entries(celestial.data)) {
+      drawCelestialLine(body, x, startingCelestialY);
+      startingCelestialY += 20;
+    }
+  pop();
+
+  push();
+    stroke('red');
+    noFill();
+    rect(x+3, 16 - 5, 302, 118);
   pop();
 }
 
@@ -538,14 +572,52 @@ function drawCelestialLine(body, x, y) {
       bodyUpFillColor: '#d8d9efff',
       bodyDownStrokeColor: '#62636fff',
       bodyDownFillColor: '#414248ff'
+    },
+    venus: {
+      lineBaseColor: '#6a7276ff',
+      lineUpColor: '#cad6dcff',
+      bodyUpStrokeColor: '#CC851E',
+      bodyUpFillColor: '#df911bff',
+      bodyDownStrokeColor: '#332e27ff',
+      bodyDownFillColor: '#4e320aff'
+    },
+    mars: {
+      lineBaseColor: '#6a7276ff',
+      lineUpColor: '#cad6dcff',
+      bodyUpStrokeColor: '#EC9063',
+      bodyUpFillColor: '#f74c4cff',
+      bodyDownStrokeColor: '#523e34ff',
+      bodyDownFillColor: '#854c2fff'
+    },
+    jupiter: {
+      lineBaseColor: '#6a7276ff',
+      lineUpColor: '#cad6dcff',
+      bodyUpStrokeColor: '#6988DA',
+      bodyUpFillColor: '#ffb286ff',
+      bodyDownStrokeColor: '#4a3930ff',
+      bodyDownFillColor: '#302b29ff'
+    },
+    saturn: {
+      lineBaseColor: '#6a7276ff',
+      lineUpColor: '#cad6dcff',
+      bodyUpStrokeColor: '#f6c656ff',
+      bodyUpFillColor: '#fadfa1ff',
+      bodyDownStrokeColor: '#4a3930ff',
+      bodyDownFillColor: '#302b29ff'
     }
   };
-  let lineLength = 300; console.log(celestialConfig);
+  let lineLength = 300;
 
   push();
+    //label
+    noStroke();
+    textSize(10);
+    fill(celestialConfig[body].bodyUpFillColor);
+    text(`${body.slice(0,1)}: `, x, y-8);
+    x = x + 5;
     //baseline
     stroke(celestialConfig[body].lineBaseColor);
-    strokeWeight(4);
+    strokeWeight(2);
     line(x, y, x + lineLength, y);
 
     //rise, set, current position marker positions
@@ -556,25 +628,72 @@ function drawCelestialLine(body, x, y) {
     //up sky
     stroke(celestialConfig[body].lineUpColor);
     noFill();
-    line(riseX, y, setX - 3, y);
+    if (setX > riseX) {
+      line(riseX, y, setX - 3, y);
+    } else {
+      line(x, y, setX - 4, y);
+      line(riseX + 1, y, x + lineLength, y);
+    }
+    
 
     strokeWeight(1);
+    fill(celestialConfig[body].lineUpColor);
+    textSize(14);
     text('|', riseX + 2, y - 10);
     text('|', setX - 2, y-10);
 
     //current position
-    if (currentX >= riseX && currentX <= setX) {
+    //15:40 >= 12:18 && 15:40 <= 02:28
+    if (bodyIsUp(currentX, riseX, setX, body)) {
       stroke(celestialConfig[body].bodyUpStrokeColor);
       fill(celestialConfig[body].bodyUpFillColor);
     } else {
       stroke(celestialConfig[body].bodyDownStrokeColor);
       fill(celestialConfig[body].bodyDownStrokeColor);
     }
-    circle(currentX, y, 20);
+    circle(currentX, y, 10);
   pop();
+}
+
+function bodyIsUp(currentX, riseX, setX, body) {
+  if (setX > riseX) {
+    //"normal" situation, if currentX is b/t rise and set, body is up.
+    if (currentX >= riseX && currentX <= setX) {
+      return true;
+    } 
+  }
+
+  if (riseX > setX) {
+    //"inverse situation"
+    if (currentX >= riseX || currentX <= setX) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function convertTimeStringToMins(time) {
   let [h, m] = time.split(':').map(Number);
   return (h * 60) + m;
 }
+
+
+/*
+ * 
+ To track planets' positions in the sky use a url like this:
+ https://ssd.jpl.nasa.gov/api/horizons.api?format=text&MAKE_EPHEM=YES&EPHEM_TYPE=OBSERVER&COMMAND='499'&CENTER='coord@399'&SITE_COORD='47.9734-122.2058,61'&START_TIME='2025-12-29'&STOP_TIME='2025-12-30'&STEP_SIZE='1%20min'&QUANTITIES='4,20'&OBJ_DATA=NO 
+ The bit that says COMMAND='499' is the part that switches b/t the planets.
+ 499 = Mars
+ 299 = Venus
+ 599 = Jupiter
+ 699 = Saturn
+
+ The columns of data that look like this are what you want:
+ 2025-Dec-29 00:00  m  188.290373 -66.039280  2.41301171643403  -1.2346059
+
+ You want to find the ones where that 'm' column contains an 'r' (for rise) or an 's' (for set).
+ And those are your rise and set times.
+
+ ~/Documents/GitHub/scifi-node-server/ephemeris.js
+ * 
+ */
