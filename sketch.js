@@ -60,9 +60,10 @@ async function setup() {
 
 function draw() { 
   background(0);
+  drawYellowGrid();
   stroke("red");
   noFill();
-  rect(1, 1, width - 1, height - 1);
+  rect(1, 1, width - 1, height - 1, 26, 13, 26, 5);
 
   if (!years) {
     drawLoadingIcon();
@@ -98,6 +99,22 @@ function draw() {
     fill(type == 'temp' ? 'red' : 'blue');
     rect((width -40), 10, 20, 20);
   pop();
+}
+
+function drawYellowGrid() {
+    const spacing = 100;
+    //vertical
+    push();
+        stroke('#ffaa00cc');
+        for (let i = spacing; i < width; i += spacing) {
+            line(i, 0, i, width);
+        }
+
+        //horizontal
+        for (let i = spacing; i < height; i += spacing) {
+            line(0, i, width, i);
+        }
+    pop();
 }
 
 function drawLoadingIcon() {
@@ -216,7 +233,7 @@ function drawGreenBox(type, daily, selected) {
 
   fill(0, 0, 0, 150);
   stroke("red");
-  rect(boxConfig.x, boxConfig.y, boxConfig.w, boxConfig.h);
+  rect(boxConfig.x, boxConfig.y, boxConfig.w, boxConfig.h, 11);
 
   if (type == "rain") {
     if (daily.error) {
@@ -551,7 +568,7 @@ function drawCelestial() {
   push();
     stroke('red');
     noFill();
-    rect(x+3, 16 - 5, 302, 118);
+    rect(x+3, 16 - 5, 302, 118, 11);
   pop();
 }
 
