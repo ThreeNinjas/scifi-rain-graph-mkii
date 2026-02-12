@@ -31,7 +31,7 @@ let util = new Util();
 async function setup() {
   createCanvas(1200, 400);
 
-  font = await loadFont("/assets/Antonio-Regular.ttf");
+  font = await loadFont("assets/Antonio-Regular.ttf");
   background(0);
 
   fetch(serverUrl + "year?type=" + type)
