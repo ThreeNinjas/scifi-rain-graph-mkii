@@ -4,7 +4,7 @@ let font;
 let daily;
 let celestial;
 
-let serverURL = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/" : "http://199.19.74.165:3000/";
+let serverUrl = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/weather/" : "http://199.19.74.165:3000/weather/";
 const urlParams = new URLSearchParams(window.location.search);
 
 let type = urlParams.get("type") || 'rain';
