@@ -4,6 +4,10 @@ let font;
 let daily;
 let celestial;
 
+const isChrome =
+  /Chrome/.test(navigator.userAgent) &&
+  !/Edg|OPR|Brave/.test(navigator.userAgent);
+
 let serverUrl = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/weather/" : "http://199.19.74.165:3000/weather/";
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -29,6 +33,7 @@ let util = new Util();
 //TODO show progress of planets in the sky....see the bottom for my notes on this
 
 async function setup() {
+    pixelDensity(1);
   createCanvas(1200, 400);
 
   font = await loadFont("assets/Antonio-Regular.ttf");
@@ -299,7 +304,9 @@ function drawGreenBox(type, daily, selected) {
 
       if (selected.includes(dataType)) {
         textSize(14);
-        circle(labelX + textWidth(dataType) + 7, startingLabelY + 10, 8);
+        if (!isChrome) {
+            circle(labelX + textWidth(dataType) + 7, startingLabelY + 10, 8);
+        }
       } else {
         textSize(12);
       }
@@ -427,15 +434,20 @@ function topLeftText() {
       h: h,
     });
 
-    text(yearString(yearLabel, yearData), 10, startY);
+    
 
     if (selectedYear.includes(yearLabel)) {
-      circle(
-        x + textWidth(yearString(yearLabel, yearData)) + 7,
-        startY + 10,
-        8
-      );
+        textSize(19);
+        if (!isChrome) {
+            circle(
+                x + textWidth(yearString(yearLabel, yearData)) + 7,
+                startY + 10,
+                8
+            );
+        }
+      
     }
+    text(yearString(yearLabel, yearData), 10, startY);
     startY += 20;
   }
   pop();
@@ -655,9 +667,11 @@ function drawCelestialLine(body, x, y) {
 
     strokeWeight(1);
     fill(celestialConfig[body].lineUpColor);
-    textSize(14);
-    text('|', riseX + 2, y - 10);
-    text('|', setX - 2, y-10);
+    if (!isChrome) {
+        textSize(14);
+        text('|', riseX + 2, y - 10);
+        text('|', setX - 2, y-10);
+    } 
 
     //current position
     //15:40 >= 12:18 && 15:40 <= 02:28
