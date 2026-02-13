@@ -561,7 +561,8 @@ function timeStamp() {
   );
 }
 
-function drawCelestial() {
+function drawCelestial() { 
+    if (!celestial.data) return;
   let x = 600;
   let startingCelestialY = 19;
 
