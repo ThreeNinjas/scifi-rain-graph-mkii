@@ -8,7 +8,8 @@ const isChrome =
   /Chrome/.test(navigator.userAgent) &&
   !/Edg|OPR|Brave/.test(navigator.userAgent);
 
-let serverUrl = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/weather/" : "http://199.19.74.165:3000/weather/";
+//let serverUrl = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/weather/" : "http://199.19.74.165:3000/weather/";
+let serverUrl = "http://199.19.74.165:3000/weather/";
 const urlParams = new URLSearchParams(window.location.search);
 
 let type = urlParams.get("type") || 'rain';
@@ -68,7 +69,7 @@ function draw() {
   drawYellowGrid();
   stroke("red");
   noFill();
-  rect(1, 1, width - 1, height - 1, 26, 13, 26, 5);
+  rect(1, 1, width - 1, height - 1, 26, 26, 26, 26);
 
   if (!years) {
     drawLoadingIcon();
@@ -104,6 +105,33 @@ function draw() {
     fill(type == 'temp' ? 'red' : 'blue');
     rect((width -40), 10, 20, 20);
   pop();
+
+  drawCornerMasks();
+}
+
+function drawCornerMasks() {
+  noStroke();
+  fill("black");
+
+  const r = 26;
+  const steps = 12;
+
+  drawCornerMask(0, 0, 1 + r, 1 + r, PI, PI + HALF_PI);
+  drawCornerMask(width, 0, width - r, 1 + r, PI + HALF_PI, TWO_PI);
+  drawCornerMask(0, height, 1 + r, height - r, HALF_PI, PI);
+  drawCornerMask(width, height, width - r, height - r, 0, HALF_PI);
+
+  function drawCornerMask(cornerX, cornerY, cx, cy, a1, a2) {
+    beginShape();
+    vertex(cornerX, cornerY);
+
+    for (let i = 0; i <= steps; i++) {
+      const a = map(i, 0, steps, a1, a2);
+      vertex(cx + cos(a) * r, cy + sin(a) * r);
+    }
+
+    endShape(CLOSE);
+  }
 }
 
 function drawYellowGrid() {
