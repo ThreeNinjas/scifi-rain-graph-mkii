@@ -27,6 +27,15 @@ let runnersUp = [];
 
 let util = new Util();
 
+let currentBoxOpacity = JSON.parse(localStorage.getItem("currentBoxOpacity")) || 150;
+let boxOpacityLevels = {
+  min: 25.5,
+  max: 255,
+  inc: 25.5
+}
+
+const boxConfig = getBoxConfig();
+
 //TODO comfort dot
 //24hr temp range can be historic low - historic high for that day - you can't get that from open-meteo, but you can get it from this api: https://dev.meteostat.net/api/point/daily.html#example
 //TODO audo detect location? No, allow the user to enter a zip or address
@@ -92,11 +101,11 @@ function draw() {
 
   if (daily) {
     if (selectedYear.length == 0) {
-      drawGreenBox(type, daily, selectedSupplementalData);
+      drawGreenBox(selectedSupplementalData);
     }
   }
 
-  if (type == 'rain' && celestial && selectedYear.length == 0) {
+  if (type == 'rain' && celestial && celestial.data && selectedYear.length == 0) {
     drawCelestial()
   }
 
@@ -221,6 +230,17 @@ function mousePressed() {
     }
   }
 
+  //greenbox Opacity
+  if (
+    mouseX >= boxConfig.x &&
+    mouseX <= boxConfig.x + boxConfig.w &&
+    mouseY >= boxConfig.y &&
+    mouseY <= boxConfig.y + boxConfig.h
+  ) {
+    incrementOpacity();
+    redraw();
+  }
+
   //toggle switch
   if (
     mouseX >= width - 40 &&
@@ -233,10 +253,19 @@ function mousePressed() {
   }
 }
 
-function drawGreenBox(type, daily, selected) {
-  let boxConfig = {};
-  let colors = null;
+function incrementOpacity() {
+  if (currentBoxOpacity >= boxOpacityLevels.max) {
+    currentBoxOpacity = boxOpacityLevels.min;
+  } else {
+    currentBoxOpacity += boxOpacityLevels.inc;
+  }
 
+  localStorage.setItem("currentBoxOpacity", currentBoxOpacity);
+  return;
+}
+
+function getBoxConfig() {
+  let boxConfig = {};
   switch (type) {
     case "rain":
       boxConfig = {
@@ -245,7 +274,7 @@ function drawGreenBox(type, daily, selected) {
         w: 300,
         h: 100,
       };
-      colors = {
+      boxConfig.colors = {
         temp: "#ff5555",
         pres: "#7ce839ff",
         hum: "#5a7dfcff",
@@ -263,13 +292,38 @@ function drawGreenBox(type, daily, selected) {
       };
       break;
   }
+  return boxConfig;
+}
 
-  fill(0, 0, 0, 150);
+function drawGreenBox(selected=selectedSupplementalData) {
+  fill(0, 0, 0, currentBoxOpacity);
   stroke("red");
   rect(boxConfig.x, boxConfig.y, boxConfig.w, boxConfig.h, 11);
 
-  if (type == "rain") {
-    if (daily.error) {
+  if (type == "rain") { 
+    draw24Hour(boxConfig, selected, boxConfig.colors);
+  }
+
+  if (type == 'temp' && years) {
+    let startX = boxConfig.x + 5;
+    let startY = boxConfig.y + 15;
+
+    let minX = boxConfig.x + 5;
+    let maxX = minX + (boxConfig.w - 10);
+
+    for (const year of Object.values(years.years)) {
+      pop();
+        stroke(year.color);
+        let endX = map(year.ranges.max, year.ranges.min, year.ranges.max, minX, maxX);
+        line(minX, startY, (minX + year.ranges.spread) * 1.2, startY);
+        startY += boxConfig.h * 0.23;
+      push();
+    }
+  }
+}
+
+function draw24Hour(boxConfig, selected, colors) {
+  if (daily.error) {
       push();
       textSize(32);
       fill("red");
@@ -280,11 +334,15 @@ function drawGreenBox(type, daily, selected) {
       return;
     }
 
+    const graphableDailies = [
+      'temp', 'pres', 'hum', 'clouds', 'rain', 'vis'
+    ];
+
     let labelX = boxConfig.x + boxConfig.w + 10;
     let startingLabelY = boxConfig.y;
 
     for (const [dataType, data] of Object.entries(daily.data)) {
-      if (selected.length > 0 && !selected.includes(dataType)) {
+      if (selected.length > 0 && !selected.includes(dataType) || !graphableDailies.includes(dataType)) {
         continue;
       }
       
@@ -349,24 +407,6 @@ function drawGreenBox(type, daily, selected) {
       startingLabelY += 18;
       pop();
     }
-  }
-
-  if (type == 'temp' && years) {
-    let startX = boxConfig.x + 5;
-    let startY = boxConfig.y + 15;
-
-    let minX = boxConfig.x + 5;
-    let maxX = minX + (boxConfig.w - 10);
-
-    for (const year of Object.values(years.years)) {
-      pop();
-        stroke(year.color);
-        let endX = map(year.ranges.max, year.ranges.min, year.ranges.max, minX, maxX);
-        line(minX, startY, (minX + year.ranges.spread) * 1.2, startY);
-        startY += boxConfig.h * 0.23;
-      push();
-    }
-  }
 }
 
 function drawDaily() {
@@ -590,13 +630,14 @@ function timeStamp() {
 }
 
 function drawCelestial() { 
-    if (!celestial.data) return;
+    //if (!celestial.data) return;
+    //console.log('drawCelestial');
   let x = 600;
   let startingCelestialY = 19;
 
   push();
     noStroke();
-    fill(0, 0, 0, 100);
+    fill(0, 0, 0, currentBoxOpacity);
     rect(x+3, 16 - 5, 302, 118);
   pop();
   push();
