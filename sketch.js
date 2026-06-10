@@ -9,7 +9,7 @@ const isChrome =
   !/Edg|OPR|Brave/.test(navigator.userAgent);
 
 //let serverUrl = window.location.hostname === "127.0.0.1" ? "http://localhost:3000/weather/" : "http://199.19.74.165:3000/weather/";
-let serverUrl = "http://199.19.74.165:3000/weather/";
+let serverUrl = "https://jasonjbru.net/api/weather/";
 const urlParams = new URLSearchParams(window.location.search);
 
 let type = urlParams.get("type") || 'rain';
